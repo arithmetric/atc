@@ -225,29 +225,29 @@ var Airport=Fiber.extend(function() {
       if(this.timeout.runway) game_clear_timeout(this.timeout.runway);
     },
     addAircraft: function() {
+      // Add one initial departure
       if(this.departures) {
-        var r = crange(0, Math.random(), 1, 1, 2);
-        if(Math.random() > 0.9)
-          r = crange(0, Math.random(), 1, 1, 6);
-        for(var i=0;i<r;i++) {
-          this.timeout.departure = game_timeout(this.addAircraftDeparture, Math.random() * 0.1, this, false);
-        }
-        this.addAircraftDeparture(true);
+        this.addAircraftDeparture()
       }
 
-      if(this.arrivals) {
-        for(var i=0;i<this.arrivals.length;i++) {
-          var arrival = this.arrivals[i];
-
-          var delay = crange(0, Math.random(), 1, arrival.frequency[0], arrival.frequency[1]);
-          if(Math.random() > 0.3) {
-            delay = Math.random() * 0.1;
-            game_timeout(this.addAircraftArrival, delay, this, [arrival, null, false]);
+      // Setup intervals to add subsequent departures and arrivals
+      var more_aircraft_interval = 30,
+        more_aircraft = game_interval(function () {
+          //TODO: add difficulty multiplier
+          if (Math.random() < (0.01 * (this.departures.frequency[0] + this.departures.frequency[1] / 2))) {
+            this.addAircraftDeparture();
           }
-          this.arrivals[i].timeout = game_timeout(this.addAircraftArrival, delay, this, [arrival, crange(0, Math.random(), 1, 0.3, 0.7)]);
-        }
-      }
-
+          if (Math.random() < (0.01 * (this.arrivals[0].frequency[0] + this.arrivals[0].frequency[1] / 2))) {
+            var arrival = {
+                "angle":     Math.floor(Math.random() * 360),
+                "heading":   Math.floor(Math.random() * 360),
+                "airlines":  this.departures.airlines,
+                "frequency": [1, 1],
+                "altitude":  [5000, 10000]
+              };
+            this.addAircraftArrival([arrival, crange(0, Math.random(), 1, 0.3, 0.7)]);
+          }
+        }, more_aircraft_interval, this, false);
     },
     addAircraftDeparture: function(timeout) {
       if(timeout == undefined) timeout=false;
